@@ -14,16 +14,19 @@ app.use("/customer/auth/*", function auth(req,res,next){
     //Write the authenication mechanism here
     if (req.session.authorization) {
         let token = req.session.authorization['accessToken'];
+        let username = req.session.authorization['username'];
 
         // Verify JWT token
-        jwt.verify(token, "token_secret", (err, user) => {
+        jwt.verify(token, "access", (err, user) => {
             if (!err) {
-                req.user = user;
-                next();
+                req.username = username;
+                next(); // Proceed to the next middleware
             } else {
                 return res.status(403).json({ message: "User not authenticated" });
             }
         });
+    } else {
+        return res.status(403).json({ message: "User not logged in" });
     }
 });
  

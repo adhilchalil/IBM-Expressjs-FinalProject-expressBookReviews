@@ -39,10 +39,10 @@ regd_users.post("/login", (req,res) => {
     if (authenticatedUser(username, password)) {
         // Generate JWT access token
         let accessToken = jwt.sign({
-            data: {username,password}
+            data: username
             // IMPORTANT AF!!!! Very bad practice to include password in payload.
             // In HMAC token creation it is only base64 encoded and can be decoded out.
-        }, 'token_secret', { expiresIn: 60 * 60 });
+        }, 'access', { expiresIn: 60 * 60 });
 
         // Store access token and username in session
         req.session.authorization = {
@@ -54,6 +54,9 @@ regd_users.post("/login", (req,res) => {
     }
 });
 
+regd_users.get("/auth/review/:isbn", (req, res) => {
+    return res.json(req.username);
+});
 // Add a book review
 regd_users.put("/auth/review/:isbn", (req, res) => {
     //Write your code here
@@ -62,8 +65,8 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
     if(isbn){
         if(books[isbn]){
             let reviews = books[isbn].reviews;
-            let reviewExists = reviews[req.user]? true: false;
-            reviews[req.user] = review;
+            let reviewExists = reviews[req.username]? true: false;
+            reviews[req.username] = review;
             return res.send(reviewExists? "Review updated!": "Review added!");
         }
         return res.status(404).json({message: "Book not found!"});
@@ -73,13 +76,15 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
 
 regd_users.delete("/auth/review/:isbn", (req, res) => {
     let isbn = req.params.isbn;
-    let review = req.body.review;
+
     if(isbn){
         if(books[isbn]){
             let reviews = books[isbn].reviews;
-            let reviewExists = reviews[req.user]? true: false;
-            reviews[req.user] = review;
-            return res.send(reviewExists? "Review updated!": "Review added!");
+            let reviewExists = reviews[req.username]? true: false;
+            if(reviewExists){
+                delete reviews[req.username];
+            }
+            return res.send(reviewExists? "Review deleted!": "Review not found!");
         }
         return res.status(404).json({message: "Book not found!"});
     }
